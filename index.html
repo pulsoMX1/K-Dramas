@@ -72,6 +72,11 @@
         width: 100%; height: 100%; object-fit: cover;
         background: #000;
     }
+    .slide .poster-img {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        object-fit: cover; z-index: 1;
+        transition: opacity .25s ease;
+    }
 
     /* Viñeta cinematográfica: oscurece hacia abajo para que el texto se lea */
     .slide .scrim {
@@ -259,11 +264,11 @@
         slide.dataset.duracion = item.duracion_segundos;
         slide.dataset.nc = item.netcoins_recompensa;
         slide.dataset.reclamado = 'false';
-        slide.dataset.activo = 'false';
 
         slide.innerHTML = `
             <video src="${item.video_url}" poster="${item.miniatura_url || ''}"
                    playsinline muted preload="${index === 0 ? 'auto' : 'metadata'}"></video>
+            ${item.miniatura_url ? `<img class="poster-img" src="${item.miniatura_url}" alt="">` : ''}
             <div class="scrim"></div>
             <div class="progreso-track"><div class="progreso-fill"></div></div>
             <div class="info-pelicula">
@@ -343,46 +348,34 @@
 
     function activarSlide(slide) {
         const video = slide.querySelector('video');
+        const posterImg = slide.querySelector('.poster-img');
         const fill = slide.querySelector('.progreso-fill');
         video.muted = !audioActivado;
         fill.style.width = '0%';
 
-        const iniciarReproduccion = () => {
-            if (slide.dataset.activo !== 'true') return; // el usuario ya se deslizó a otro slide mientras cargaba
-            video.currentTime = 0;
-            video.play().catch(() => {});
-        };
+        // Mostrar la miniatura por encima mientras el video todavía no tenga
+        // un fotograma real que mostrar — esto es lo que evita la pantalla
+        // en negro mientras el video termina de cargar en conexiones móviles
+        // más lentas. Si el video ya tiene datos (ej. al regresar a un slide
+        // que ya se había reproducido antes), no hace falta taparlo.
+        if (posterImg) {
+            const yaTieneFotograma = video.readyState >= 2;
+            posterImg.style.opacity = yaTieneFotograma ? '0' : '1';
+            posterImg.style.pointerEvents = yaTieneFotograma ? 'none' : '';
 
-        slide.dataset.activo = 'true';
-
-        // Evita apilar listeners duplicados si activarSlide se llama más de
-        // una vez seguida para el mismo video antes de que termine de cargar.
-        if (video._listenerCargaPendiente) {
-            video.removeEventListener('loadeddata', video._listenerCargaPendiente);
-            video._listenerCargaPendiente = null;
+            video.addEventListener('playing', function ocultarPoster() {
+                posterImg.style.opacity = '0';
+                posterImg.style.pointerEvents = 'none';
+            }, { once: true });
         }
 
-        if (video.readyState >= 2) {
-            // Ya tiene datos suficientes para mostrar un fotograma real: reproducir de inmediato
-            iniciarReproduccion();
-        } else {
-            // Todavía no ha cargado nada reproducible (típico en internet
-            // móvil más lento) — en vez de llamar a .play() a ciegas (lo
-            // cual hace que el navegador oculte la miniatura/poster y
-            // muestre una pantalla en negro mientras termina de cargar),
-            // esperamos a que el video avise que ya tiene el primer
-            // fotograma listo. Mientras tanto, se sigue viendo la miniatura
-            // normalmente.
-            video._listenerCargaPendiente = iniciarReproduccion;
-            video.addEventListener('loadeddata', iniciarReproduccion, { once: true });
-            // Si el video traía preload="metadata" (no la primera), forzamos
-            // que ahora sí empiece a descargar el video completo, ya que
-            // realmente lo vamos a reproducir.
-            if (video.preload !== 'auto') {
-                video.preload = 'auto';
-                video.load();
-            }
-        }
+        video.currentTime = 0;
+        // Llamamos a .play() de inmediato (sin esperar a nada): en varios
+        // navegadores móviles, la carga real de datos ('preload') solo
+        // arranca en cuanto se pide reproducir, así que esperar pasivamente
+        // podía dejar el video congelado para siempre. La miniatura de
+        // arriba se encarga de que esto se vea bien mientras tanto.
+        video.play().catch(() => {});
 
         video.ontimeupdate = () => {
             if (!video.duration) return;
@@ -398,7 +391,6 @@
     }
 
     function desactivarSlide(slide) {
-        slide.dataset.activo = 'false';
         const video = slide.querySelector('video');
         video.pause();
         video.ontimeupdate = null;
