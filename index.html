@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
     :root {
         --rojo: #c0152a;
@@ -28,7 +27,6 @@
         overflow: hidden;
     }
 
-    /* ══ HEADER FLOTANTE ══ */
     .top-bar {
         position: fixed; top: 0; left: 0; right: 0; z-index: 50;
         display: flex; align-items: center; justify-content: space-between;
@@ -53,9 +51,7 @@
         transition: transform .15s ease, background .15s ease;
     }
     .icon-btn:active { transform: scale(0.9); }
-    .icon-btn.back { text-decoration: none; }
 
-    /* ══ FEED ══ */
     #feed {
         height: 100dvh; width: 100%;
         overflow-y: scroll; scroll-snap-type: y mandatory;
@@ -74,7 +70,6 @@
         background: #000;
     }
 
-    /* Viñeta cinematográfica: oscurece hacia abajo para que el texto se lea */
     .slide .scrim {
         position: absolute; inset: 0; pointer-events: none;
         background:
@@ -82,7 +77,6 @@
             linear-gradient(to bottom, rgba(0,0,0,.55) 0%, transparent 22%);
     }
 
-    /* Barra de progreso — estilo Stories, arriba del todo */
     .progreso-track {
         position: absolute; top: max(8px, env(safe-area-inset-top));
         left: 12px; right: 12px; height: 3px; border-radius: 3px;
@@ -95,7 +89,6 @@
         transition: width .12s linear;
     }
 
-    /* Info de la película */
     .info-pelicula {
         position: absolute; left: 18px; right: 84px; bottom: max(26px, env(safe-area-inset-bottom));
         z-index: 30;
@@ -117,7 +110,6 @@
         overflow: hidden; text-shadow: 0 1px 6px rgba(0,0,0,.5);
     }
 
-    /* Riel de acciones a la derecha */
     .riel-acciones {
         position: absolute; right: 12px; bottom: max(30px, env(safe-area-inset-bottom));
         z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 18px;
@@ -130,7 +122,6 @@
     }
     .nc-chip i { font-size: 1.3rem; }
 
-    /* Toast de recompensa */
     .toast-nc {
         position: fixed; left: 50%; bottom: 14%; transform: translate(-50%, 20px);
         background: linear-gradient(135deg, #1a1a2e, #0b0b0f);
@@ -145,7 +136,6 @@
     .toast-nc.error { border-color: rgba(239,68,68,.5); }
     .toast-nc.error i { color: #ef4444; }
 
-    /* Hint de deslizar (solo primer slide) */
     .hint-swipe {
         position: absolute; left: 50%; bottom: max(70px, calc(env(safe-area-inset-bottom) + 60px));
         transform: translateX(-50%); z-index: 30; text-align: center;
@@ -157,7 +147,6 @@
     .hint-swipe i { display: block; font-size: 1.1rem; margin-bottom: 4px; }
     @keyframes flotar { 0%,100% { transform: translate(-50%, 0); opacity: .5; } 50% { transform: translate(-50%, -8px); opacity: 1; } }
 
-    /* Loader / estados */
     .estado-pantalla {
         position: fixed; inset: 0; display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 14px; text-align: center;
@@ -166,10 +155,6 @@
     .estado-pantalla i.fa-spinner { font-size: 2rem; color: var(--amarillo); }
     .estado-pantalla h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; }
     .estado-pantalla p { color: rgba(255,255,255,.65); font-size: 0.88rem; max-width: 280px; }
-
-    @media (prefers-reduced-motion: reduce) {
-        .hint-swipe { animation: none; }
-    }
 </style>
 </head>
 <body>
@@ -208,12 +193,6 @@
     </div>
 
 <script>
-    // Inicializar cliente de Supabase
-    const _supabase = supabase.createClient(
-        'https://meiwuluwrdjszxeyoqtt.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laXd1bHV3cmRqc3p4ZXlvcXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDAxMjcxODksImV4cCI6MTk1NTcwNzE4OX0.b0K9Q8aR5OVk8P5J8t9J8t9J8t9J8t9J8t9J8t9J8t9J'
-    );
-
     const EDGE_BASE = 'https://meiwuluwrdjszxeyoqtt.supabase.co/functions/v1';
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('uid');
@@ -232,13 +211,8 @@
         document.querySelectorAll('#feed video').forEach(v => v.muted = !audioActivado);
     });
 
-    // ── Placeholder para "noticias en video" ────────────────────────
-    // Aún no existen los videos de noticias. Cuando los tengas, llena
-    // este arreglo (o cámbialo por un fetch real) con objetos del mismo
-    // formato que una película, y se van a intercalar solos en el feed
-    // sin tocar nada más.
     function obtenerNoticiasVideoPlaceholder() {
-        return []; // <- cuando tengas videos de noticias, regrésalos aquí
+        return [];
     }
 
     function construirFeedMezclado(peliculas) {
@@ -246,7 +220,6 @@
         const items = peliculas.map(p => ({ ...p, tipo: 'pelicula' }));
         if (!noticias.length) return items;
 
-        // Intercala 1 noticia cada 4 películas
         const mezclado = [];
         let iNoticia = 0;
         items.forEach((item, i) => {
@@ -285,65 +258,75 @@
         return slide;
     }
 
-    async function obtenerTokenJWT() {
-        try {
-            const { data: { session } } = await _supabase.auth.getSession();
-            return session?.access_token || null;
-        } catch (e) {
-            return null;
-        }
-    }
-
     async function yaFueVista(peliculaId) {
-    if (!userId) return false;
-    try {
-        const res = await fetch(`${EDGE_BASE}/verificar-pelicula`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid: userId, peliculaId })
-        });
-        const data = await res.json();
-        return !!data.ya_vista;
-    } catch (e) { return false; }
-}
-
-async function reclamarRecompensa(slide) {
-    if (slide.dataset.reclamado === 'true') return;
-    slide.dataset.reclamado = 'true';
-
-    if (!userId) {
-        mostrarToast('Inicia sesión desde NetGamer para ganar NC', true);
-        return;
-    }
-
-    const peliculaId = slide.dataset.id;
-    const yaVista = await yaFueVista(peliculaId);
-    if (yaVista) return;
-
-    try {
-        const res = await fetch(`${EDGE_BASE}/recompensar-pelicula`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid: userId, peliculaId })
-        });
-        const data = await res.json();
-
-        if (res.ok && data.ok) {
-            mostrarToast(`+${data.nc} NetCoins acreditadas`);
-        } else {
-            const mensajes = {
-                'ya_vista': null,
-                'limite_diario': '¡Límite diario de películas alcanzado!',
-                'usuario_invalido': 'Usuario no reconocido',
-                'pelicula_invalida': 'Esta película ya no está disponible'
-            };
-            const msg = mensajes[data.error];
-            if (msg) mostrarToast(msg, true);
+        if (!userId) return false;
+        try {
+            const res = await fetch(`${EDGE_BASE}/verificar-pelicula`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: userId, peliculaId })
+            });
+            const data = await res.json();
+            return !!data.ya_vista;
+        } catch (e) { 
+            console.error('Error verificando película:', e);
+            return false; 
         }
-    } catch (e) {
-        mostrarToast('Error de red al acreditar NC', true);
     }
-}
+
+    function mostrarToast(texto, esError = false) {
+        const toast = document.getElementById('toast-nc');
+        const span = document.getElementById('toast-nc-texto');
+        span.textContent = texto;
+        toast.classList.toggle('error', esError);
+        toast.classList.add('visible');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+    }
+
+    async function reclamarRecompensa(slide) {
+        if (slide.dataset.reclamado === 'true') return;
+        slide.dataset.reclamado = 'true';
+
+        if (!userId) {
+            mostrarToast('Inicia sesión desde NetGamer para ganar NC', true);
+            return;
+        }
+
+        const peliculaId = slide.dataset.id;
+        if (!peliculaId) {
+            console.error('Error: peliculaId es undefined');
+            return;
+        }
+
+        const yaVista = await yaFueVista(peliculaId);
+        if (yaVista) return;
+
+        try {
+            const res = await fetch(`${EDGE_BASE}/recompensar-pelicula`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: userId, peliculaId })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.ok) {
+                mostrarToast(`+${data.nc} NetCoins acreditadas`);
+            } else {
+                const mensajes = {
+                    'ya_vista': null,
+                    'limite_diario': '¡Límite diario de películas alcanzado!',
+                    'usuario_invalido': 'Usuario no reconocido',
+                    'pelicula_invalida': 'Esta película ya no está disponible'
+                };
+                const msg = mensajes[data.error];
+                if (msg) mostrarToast(msg, true);
+            }
+        } catch (e) {
+            console.error('Error reclamando recompensa:', e);
+            mostrarToast('Error de red al acreditar NC', true);
+        }
+    }
 
     function activarSlide(slide) {
         const video = slide.querySelector('video');
@@ -351,7 +334,22 @@ async function reclamarRecompensa(slide) {
         video.muted = !audioActivado;
         video.currentTime = 0;
         fill.style.width = '0%';
-        video.play().catch(() => {});
+
+        const attemptPlay = () => {
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        slide.removeEventListener('click', attemptPlay);
+                        document.removeEventListener('touchstart', attemptPlay);
+                    })
+                    .catch(() => {
+                        slide.addEventListener('click', attemptPlay, { once: true });
+                        document.addEventListener('touchstart', attemptPlay, { once: true });
+                    });
+            }
+        };
+        attemptPlay();
 
         video.ontimeupdate = () => {
             if (!video.duration) return;
@@ -362,7 +360,7 @@ async function reclamarRecompensa(slide) {
         video.onended = () => {
             reclamarRecompensa(slide);
             video.currentTime = 0;
-            video.play().catch(() => {}); // sigue en loop hasta que el usuario deslice
+            attemptPlay();
         };
     }
 
@@ -411,12 +409,12 @@ async function reclamarRecompensa(slide) {
 
             iniciarObservador();
         } catch (e) {
+            console.error('Error cargando feed:', e);
             document.getElementById('estado-cargando').style.display = 'none';
             document.getElementById('estado-error').style.display = 'flex';
         }
     }
 
-    // Navegación con flechas de teclado (útil en desktop)
     document.addEventListener('keydown', (e) => {
         const feed = document.getElementById('feed');
         if (e.key === 'ArrowDown') feed.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
