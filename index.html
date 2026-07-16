@@ -92,6 +92,7 @@
     .info-pelicula {
         position: absolute; left: 18px; right: 84px; bottom: max(26px, env(safe-area-inset-bottom));
         z-index: 30;
+        pointer-events: none; /* Deja pasar el dedo hacia el video */
     }
     .tag-ia {
         display: inline-flex; align-items: center; gap: 5px;
@@ -113,6 +114,7 @@
     .riel-acciones {
         position: absolute; right: 12px; bottom: max(30px, env(safe-area-inset-bottom));
         z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 18px;
+        pointer-events: none; /* Deja pasar el dedo hacia el video */
     }
     .riel-acciones .icon-btn { width: 44px; height: 44px; font-size: 1.05rem; }
     .nc-chip {
