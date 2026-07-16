@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
     :root {
         --rojo: #c0152a;
@@ -56,14 +57,14 @@
 
     /* ══ FEED ══ */
     #feed {
-        height: 100vh; height: 100dvh; width: 100%;
+        height: 100dvh; width: 100%;
         overflow-y: scroll; scroll-snap-type: y mandatory;
         scrollbar-width: none;
     }
     #feed::-webkit-scrollbar { display: none; }
 
     .slide {
-        position: relative; height: 100vh; height: 100dvh; width: 100%;
+        position: relative; height: 100dvh; width: 100%;
         scroll-snap-align: start; scroll-snap-stop: always;
         display: flex; align-items: center; justify-content: center;
         background: var(--cine-2); overflow: hidden;
@@ -71,11 +72,6 @@
     .slide video {
         width: 100%; height: 100%; object-fit: cover;
         background: #000;
-    }
-    .slide .poster-img {
-        position: absolute; inset: 0; width: 100%; height: 100%;
-        object-fit: cover; z-index: 5;
-        transition: opacity .25s ease;
     }
 
     /* Viñeta cinematográfica: oscurece hacia abajo para que el texto se lea */
@@ -212,6 +208,12 @@
     </div>
 
 <script>
+    // Inicializar cliente de Supabase
+    const _supabase = supabase.createClient(
+        'https://meiwuluwrdjszxeyoqtt.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laXd1bHV3cmRqc3p4ZXlvcXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDAxMjcxODksImV4cCI6MTk1NTcwNzE4OX0.b0K9Q8aR5OVk8P5J8t9J8t9J8t9J8t9J8t9J8t9J8t9J'
+    );
+
     const EDGE_BASE = 'https://meiwuluwrdjszxeyoqtt.supabase.co/functions/v1';
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('uid');
@@ -268,7 +270,6 @@
         slide.innerHTML = `
             <video src="${item.video_url}" poster="${item.miniatura_url || ''}"
                    playsinline muted preload="${index === 0 ? 'auto' : 'metadata'}"></video>
-            ${item.miniatura_url ? `<img class="poster-img" src="${item.miniatura_url}" alt="">` : ''}
             <div class="scrim"></div>
             <div class="progreso-track"><div class="progreso-fill"></div></div>
             <div class="info-pelicula">
@@ -284,13 +285,26 @@
         return slide;
     }
 
+    async function obtenerTokenJWT() {
+        try {
+            const { data: { session } } = await _supabase.auth.getSession();
+            return session?.access_token || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function yaFueVista(peliculaId) {
         if (!userId) return false;
         try {
+            const token = await obtenerTokenJWT();
             const res = await fetch(`${EDGE_BASE}/verificar-pelicula`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: userId, peliculaId })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ peliculaId })
             });
             const data = await res.json();
             return !!data.ya_vista;
@@ -322,10 +336,14 @@
         if (yaVista) return; // ya la había cobrado antes, no mostramos nada
 
         try {
+            const token = await obtenerTokenJWT();
             const res = await fetch(`${EDGE_BASE}/recompensar-pelicula`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: userId, peliculaId })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ peliculaId })
             });
             const data = await res.json();
 
@@ -336,7 +354,9 @@
                     'ya_vista': null, // no molestar si ya la había visto
                     'limite_diario': '¡Límite diario de películas alcanzado!',
                     'usuario_invalido': 'Usuario no reconocido',
-                    'pelicula_invalida': 'Esta película ya no está disponible'
+                    'pelicula_invalida': 'Esta película ya no está disponible',
+                    'sin_token': 'Inicia sesión para ganar NC',
+                    'token_invalido': 'Tu sesión expiró, recarga la página'
                 };
                 const msg = mensajes[data.error];
                 if (msg) mostrarToast(msg, true);
@@ -348,48 +368,11 @@
 
     function activarSlide(slide) {
         const video = slide.querySelector('video');
-        const posterImg = slide.querySelector('.poster-img');
         const fill = slide.querySelector('.progreso-fill');
         video.muted = !audioActivado;
-        fill.style.width = '0%';
-
-        // Mostrar la miniatura por encima mientras el video todavía no tenga
-        // un fotograma real que mostrar — esto es lo que evita la pantalla
-        // en negro mientras el video termina de cargar en conexiones móviles
-        // más lentas. Si el video ya tiene datos (ej. al regresar a un slide
-        // que ya se había reproducido antes), no hace falta taparlo.
-        if (posterImg) {
-            const yaTieneFotograma = video.readyState >= 2;
-            posterImg.style.opacity = yaTieneFotograma ? '0' : '1';
-            posterImg.style.pointerEvents = yaTieneFotograma ? 'none' : '';
-
-            video.addEventListener('playing', function ocultarPoster() {
-                posterImg.style.opacity = '0';
-                posterImg.style.pointerEvents = 'none';
-            }, { once: true });
-        }
-
         video.currentTime = 0;
-        // En iOS, video.play() puede fallar sin interacción del usuario.
-        // Se intenta reproducir, pero si falla, se agrega un listener para
-        // que el toque en la pantalla inicie la reproducción.
-        const attemptPlay = () => {
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        // Reproducción exitosa — remover listeners de fallback
-                        slide.removeEventListener('click', attemptPlay);
-                        document.removeEventListener('touchstart', attemptPlay);
-                    })
-                    .catch(() => {
-                        // Falló automático — esperar tap del usuario
-                        slide.addEventListener('click', attemptPlay, { once: true });
-                        document.addEventListener('touchstart', attemptPlay, { once: true });
-                    });
-            }
-        };
-        attemptPlay();
+        fill.style.width = '0%';
+        video.play().catch(() => {});
 
         video.ontimeupdate = () => {
             if (!video.duration) return;
@@ -400,7 +383,7 @@
         video.onended = () => {
             reclamarRecompensa(slide);
             video.currentTime = 0;
-            attemptPlay(); // sigue en loop hasta que el usuario deslice
+            video.play().catch(() => {}); // sigue en loop hasta que el usuario deslice
         };
     }
 
@@ -411,9 +394,6 @@
         video.onended = null;
     }
 
-    let _primerSlideEl = null;
-    let _primerSlideProtegidoHasta = 0;
-
     function iniciarObservador() {
         const feed = document.getElementById('feed');
         const observer = new IntersectionObserver((entries) => {
@@ -423,16 +403,6 @@
                     activarSlide(slide);
                     slide.querySelector('.hint-swipe')?.remove();
                 } else {
-                    // Protección especial para el primer video: justo al
-                    // cargar la página, el layout puede tardar un instante en
-                    // asentarse en algunos navegadores móviles, lo que puede
-                    // hacer que esta primera medición del observer sea
-                    // incorrecta y quiera pausar el video que acabamos de
-                    // arrancar manualmente. Lo ignoramos durante una ventana
-                    // corta de tiempo para evitar esa pausa accidental.
-                    if (slide === _primerSlideEl && Date.now() < _primerSlideProtegidoHasta) {
-                        return;
-                    }
                     desactivarSlide(slide);
                 }
             });
@@ -460,30 +430,7 @@
             items.forEach((item, i) => feed.appendChild(crearSlide(item, i)));
             feed.style.display = 'block';
 
-            // Activamos el primer slide de inmediato (siempre es visible al
-            // cargar la página), y lo protegemos por 2.5s contra una posible
-            // pausa accidental del observer mientras el layout se asienta.
-            const primerSlide = feed.querySelector('.slide');
-            if (primerSlide) {
-                _primerSlideEl = primerSlide;
-                _primerSlideProtegidoHasta = Date.now() + 2500;
-                activarSlide(primerSlide);
-            }
-
-            // Arrancamos el IntersectionObserver un frame después (en vez de
-            // en el mismo instante). Esto es importante: si el observer hace
-            // su primera medición ANTES de que el layout termine de
-            // asentarse (algo común en celulares mientras la barra de
-            // direcciones dinámica se ajusta), puede leer mal la visibilidad
-            // del primer slide y pausarlo justo después de que lo activamos
-            // arriba — que es exactamente lo que causaba que el primer video
-            // se viera "pausado" al entrar y solo se reprodujera hasta
-            // deslizar y regresar.
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    iniciarObservador();
-                });
-            });
+            iniciarObservador();
         } catch (e) {
             document.getElementById('estado-cargando').style.display = 'none';
             document.getElementById('estado-error').style.display = 'flex';
