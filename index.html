@@ -295,76 +295,55 @@
     }
 
     async function yaFueVista(peliculaId) {
-        if (!userId) return false;
-        try {
-            const token = await obtenerTokenJWT();
-            const res = await fetch(`${EDGE_BASE}/verificar-pelicula`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({ peliculaId })
-            });
-            const data = await res.json();
-            return !!data.ya_vista;
-        } catch (e) { return false; }
+    if (!userId) return false;
+    try {
+        const res = await fetch(`${EDGE_BASE}/verificar-pelicula`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid: userId, peliculaId })
+        });
+        const data = await res.json();
+        return !!data.ya_vista;
+    } catch (e) { return false; }
+}
+
+async function reclamarRecompensa(slide) {
+    if (slide.dataset.reclamado === 'true') return;
+    slide.dataset.reclamado = 'true';
+
+    if (!userId) {
+        mostrarToast('Inicia sesión desde NetGamer para ganar NC', true);
+        return;
     }
 
-    function mostrarToast(texto, esError = false) {
-        const toast = document.getElementById('toast-nc');
-        const span = document.getElementById('toast-nc-texto');
-        span.textContent = texto;
-        toast.classList.toggle('error', esError);
-        toast.classList.add('visible');
-        clearTimeout(window._toastTimer);
-        window._toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
-    }
+    const peliculaId = slide.dataset.id;
+    const yaVista = await yaFueVista(peliculaId);
+    if (yaVista) return;
 
-    async function reclamarRecompensa(slide) {
-        if (slide.dataset.reclamado === 'true') return;
-        slide.dataset.reclamado = 'true'; // evita doble intento aunque el video haga loop
+    try {
+        const res = await fetch(`${EDGE_BASE}/recompensar-pelicula`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid: userId, peliculaId })
+        });
+        const data = await res.json();
 
-        if (!userId) {
-            mostrarToast('Inicia sesión desde NetGamer para ganar NC', true);
-            return;
+        if (res.ok && data.ok) {
+            mostrarToast(`+${data.nc} NetCoins acreditadas`);
+        } else {
+            const mensajes = {
+                'ya_vista': null,
+                'limite_diario': '¡Límite diario de películas alcanzado!',
+                'usuario_invalido': 'Usuario no reconocido',
+                'pelicula_invalida': 'Esta película ya no está disponible'
+            };
+            const msg = mensajes[data.error];
+            if (msg) mostrarToast(msg, true);
         }
-
-        const peliculaId = slide.dataset.id;
-
-        const yaVista = await yaFueVista(peliculaId);
-        if (yaVista) return; // ya la había cobrado antes, no mostramos nada
-
-        try {
-            const token = await obtenerTokenJWT();
-            const res = await fetch(`${EDGE_BASE}/recompensar-pelicula`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({ peliculaId })
-            });
-            const data = await res.json();
-
-            if (res.ok && data.ok) {
-                mostrarToast(`+${data.nc} NetCoins acreditadas`);
-            } else {
-                const mensajes = {
-                    'ya_vista': null, // no molestar si ya la había visto
-                    'limite_diario': '¡Límite diario de películas alcanzado!',
-                    'usuario_invalido': 'Usuario no reconocido',
-                    'pelicula_invalida': 'Esta película ya no está disponible',
-                    'sin_token': 'Inicia sesión para ganar NC',
-                    'token_invalido': 'Tu sesión expiró, recarga la página'
-                };
-                const msg = mensajes[data.error];
-                if (msg) mostrarToast(msg, true);
-            }
-        } catch (e) {
-            mostrarToast('Error de red al acreditar NC', true);
-        }
+    } catch (e) {
+        mostrarToast('Error de red al acreditar NC', true);
     }
+}
 
     function activarSlide(slide) {
         const video = slide.querySelector('video');
