@@ -265,6 +265,26 @@
         return ifr;
     }
 
+    function refrescarBannerYSocialBar() {
+        const slotBanner = document.getElementById('ad-slot-banner-top');
+        if (slotBanner) {
+            slotBanner.innerHTML = ''; // destruye el iframe viejo (fuerza una impresión nueva de verdad)
+            slotBanner.appendChild(crearIframeAd(
+                `<html><body style='margin:0;overflow:hidden;'><script>atOptions = {'key':'d81fb80d3a74926f5784b40947a9ab68','format':'iframe','height':50,'width':320,'params':{}};<\/script><script src='https://www.highperformanceformat.com/d81fb80d3a74926f5784b40947a9ab68/invoke.js'><\/script></body></html>`,
+                'width:320px;height:50px;max-width:100%;border:none;'
+            ));
+        }
+
+        const slotSocial = document.getElementById('ad-slot-socialbar');
+        if (slotSocial) {
+            slotSocial.innerHTML = '';
+            slotSocial.appendChild(crearIframeAd(
+                `<html><body style='margin:0;background:transparent;'><script src='https://pl30307315.effectivecpmnetwork.com/91/88/b2/9188b2df041f1d05f7969590592903fa.js'><\/script></body></html>`,
+                'position:fixed;bottom:0;right:0;width:300px;height:300px;max-width:100vw;max-height:60vh;border:none;background:transparent;z-index:9999;'
+            ));
+        }
+    }
+
     function insertarAnunciosNativos() {
         document.querySelectorAll('.ad-native-slot').forEach(slot => {
             slot.appendChild(crearIframeAd(
@@ -273,17 +293,7 @@
             ));
         });
 
-        const slotBanner = document.getElementById('ad-slot-banner-top');
-        if (slotBanner) slotBanner.appendChild(crearIframeAd(
-            `<html><body style='margin:0;overflow:hidden;'><script>atOptions = {'key':'d81fb80d3a74926f5784b40947a9ab68','format':'iframe','height':50,'width':320,'params':{}};<\/script><script src='https://www.highperformanceformat.com/d81fb80d3a74926f5784b40947a9ab68/invoke.js'><\/script></body></html>`,
-            'width:320px;height:50px;max-width:100%;border:none;'
-        ));
-
-        const slotSocial = document.getElementById('ad-slot-socialbar');
-        if (slotSocial) slotSocial.appendChild(crearIframeAd(
-            `<html><body style='margin:0;background:transparent;'><script src='https://pl30307315.effectivecpmnetwork.com/91/88/b2/9188b2df041f1d05f7969590592903fa.js'><\/script></body></html>`,
-            'position:fixed;bottom:0;right:0;width:300px;height:300px;max-width:100vw;max-height:60vh;border:none;background:transparent;z-index:9999;'
-        ));
+        refrescarBannerYSocialBar();
     }
 
     function construirFeedMezclado(peliculas) {
