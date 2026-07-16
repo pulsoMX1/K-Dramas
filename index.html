@@ -404,17 +404,25 @@
             items.forEach((item, i) => feed.appendChild(crearSlide(item, i)));
             feed.style.display = 'block';
 
-            iniciarObservador();
-
-            // Respaldo: en algunos navegadores/WebViews móviles, el
-            // IntersectionObserver puede tardar en confirmar que el primer
-            // slide ya es visible justo al cargar la página (por ejemplo, si
-            // el layout todavía se está asentando por la barra de
-            // direcciones dinámica). Como el primer slide SIEMPRE es visible
-            // al cargar, lo activamos manualmente aquí también — activarSlide
-            // ya es seguro de llamar más de una vez.
+            // Activamos el primer slide de inmediato (siempre es visible al
+            // cargar la página).
             const primerSlide = feed.querySelector('.slide');
             if (primerSlide) activarSlide(primerSlide);
+
+            // Arrancamos el IntersectionObserver un frame después (en vez de
+            // en el mismo instante). Esto es importante: si el observer hace
+            // su primera medición ANTES de que el layout termine de
+            // asentarse (algo común en celulares mientras la barra de
+            // direcciones dinámica se ajusta), puede leer mal la visibilidad
+            // del primer slide y pausarlo justo después de que lo activamos
+            // arriba — que es exactamente lo que causaba que el primer video
+            // se viera "pausado" al entrar y solo se reprodujera hasta
+            // deslizar y regresar.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    iniciarObservador();
+                });
+            });
         } catch (e) {
             document.getElementById('estado-cargando').style.display = 'none';
             document.getElementById('estado-error').style.display = 'flex';
