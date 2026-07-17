@@ -135,6 +135,20 @@
         transition: width .12s linear;
     }
 
+    .nc-visto-msg {
+        display: none;
+        color: var(--rojo);
+        font-weight: 800;
+        font-size: 0.62rem;
+        line-height: 1.15;
+        text-align: center;
+        max-width: 68px;
+        margin-top: 6px;
+        text-shadow: 0 1px 4px rgba(0,0,0,.6);
+    }
+    .slide[data-visto="true"] .nc-progreso-track { display: none; }
+    .slide[data-visto="true"] .nc-visto-msg { display: block; }
+
     .toast-nc {
         position: fixed; left: 50%; bottom: 14%; transform: translate(-50%, 20px);
         background: linear-gradient(135deg, #1a1a2e, #0b0b0f);
@@ -297,8 +311,6 @@
 
     <div id="feed" style="display:none;"></div>
 
-    <div id="ad-slot-socialbar"></div>
-
     <div id="toast-nc" class="toast-nc">
         <i class="fa-solid fa-coins"></i>
         <span id="toast-nc-texto">+40 NetCoins</span>
@@ -327,7 +339,7 @@
         return [];
     }
 
-    const SANDBOX_ADS = 'allow-popups allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-popups-to-escape-sandbox allow-forms';
+    const SANDBOX_ADS = 'allow-popups allow-scripts allow-same-origin allow-popups-to-escape-sandbox allow-forms';
 
     function crearIframeAd(srcdocHtml, cssTexto) {
         const ifr = document.createElement('iframe');
@@ -347,16 +359,6 @@
             slotBanner.appendChild(crearIframeAd(
                 `<html><body style='margin:0;overflow:hidden;'><script>atOptions = {'key':'d81fb80d3a74926f5784b40947a9ab68','format':'iframe','height':50,'width':320,'params':{}};<\/script><script src='https://www.highperformanceformat.com/d81fb80d3a74926f5784b40947a9ab68/invoke.js'><\/script></body></html>`,
                 'width:320px;height:50px;max-width:100%;border:none;'
-            ));
-        }
-
-        const slotSocial = document.getElementById('ad-slot-socialbar');
-        if (slotSocial) {
-            slotSocial.innerHTML = '';
-            slotSocial.appendChild(crearIframeAd(
-                `<html><body style='margin:0;background:transparent;'><script src='https://pl30307315.effectivecpmnetwork.com/91/88/b2/9188b2df041f1d05f7969590592903fa.js'><\/script></body></html>`,
-                // Redujimos la altura para no bloquear el deslizamiento en la pantalla
-                'position:fixed;bottom:0;right:0;width:300px;height:120px;max-width:100vw;border:none;background:transparent;z-index:9999;'
             ));
         }
     }
@@ -432,6 +434,7 @@
         slide.dataset.duracion = item.duracion_segundos;
         slide.dataset.nc = item.netcoins_recompensa;
         slide.dataset.reclamado = 'false';
+        slide.dataset.visto = 'false';
 
         slide.innerHTML = `
             <video src="${item.video_url}" poster="${item.miniatura_url || ''}"
@@ -447,6 +450,7 @@
                 <div class="nc-chip">
                     <i class="fa-solid fa-coins"></i><span>+${item.netcoins_recompensa}</span>
                     <div class="nc-progreso-track"><div class="nc-progreso-fill"></div></div>
+                    <span class="nc-visto-msg">Ya viste este K-Drama</span>
                 </div>
             </div>
             ${index === 0 ? '<div class="hint-swipe"><i class="fa-solid fa-chevron-up"></i>Desliza</div>' : ''}
@@ -573,6 +577,7 @@
         };
         video.onended = () => {
             reclamarRecompensa(slide);
+            slide.dataset.visto = 'true';
             video.currentTime = 0;
             attemptPlay();
         };
@@ -658,7 +663,7 @@
 <!-- Forzar sandbox en iframes de anuncios inyectados dinámicamente (evita redirecciones) -->
 <script>
 (function() {
-    var AD_SANDBOX = 'allow-popups allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-popups-to-escape-sandbox allow-forms';
+    var AD_SANDBOX = 'allow-popups allow-scripts allow-same-origin allow-popups-to-escape-sandbox allow-forms';
     var AD_DOMAINS = ['highperformanceformat.com', 'effectivecpmnetwork.com'];
 
     function isAdIframe(iframe) {
@@ -684,7 +689,7 @@
             'div[id*="aso-"], div[id*="adsterra"]'
         ).forEach(function(el) {
             // No tocar nuestros propios contenedores de anuncios
-            if (el.id === 'ad-slot-banner-top' || el.id === 'ad-slot-socialbar') return;
+            if (el.id === 'ad-slot-banner-top') return;
             el.remove();
         });
     }
