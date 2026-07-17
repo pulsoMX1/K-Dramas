@@ -508,8 +508,8 @@
     }
 
     function activarSlide(slide) {
-        // Los anuncios ahora se refrescan cada 40 segundos automáticamente (no en cada swipe)
-        // refrescarBannerYSocialBar();
+        // --- AQUÍ REFRESCAMOS LOS ANUNCIOS FLOTANTES EN CADA SWIPE ---
+        refrescarBannerYSocialBar();
 
         if (slide.dataset.tipo === 'anuncio') {
             // Si el slide al que bajamos es una tarjeta de Facebook, inyectamos el anuncio de Adsterra
@@ -615,11 +615,6 @@
             // Ya no invocamos insertarAnunciosNativos(); desde aquí porque 'activarSlide' 
             // se encargará de inyectar y recargar la publicidad dinámicamente.
             iniciarObservador();
-
-            // Refrescar anuncios automáticamente cada 40 segundos (no en cada swipe)
-            setInterval(() => {
-                refrescarBannerYSocialBar();
-            }, 40000);
         } catch (e) {
             console.error('Error cargando feed:', e);
             document.getElementById('estado-cargando').style.display = 'none';
