@@ -292,13 +292,13 @@
 
     <div id="estado-cargando" class="estado-pantalla">
         <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Cargando películas...</p>
+        <p>Cargando videos...</p>
     </div>
 
     <div id="estado-vacio" class="estado-pantalla" style="display:none;">
         <i class="fa-solid fa-clapperboard" style="font-size:2.2rem;color:var(--amarillo);"></i>
         <h3>Ya viste todo por ahora</h3>
-        <p>No hay Mas K-Dramas nuevas para ti en este momento. Vuelve más tarde por más contenido.</p>
+        <p>No hay mas videos nuevos para ti en este momento. Vuelve más tarde por más contenido.</p>
     </div>
 
     <div id="estado-error" class="estado-pantalla" style="display:none;">
@@ -442,7 +442,7 @@
             <div class="scrim"></div>
             <div class="progreso-track"><div class="progreso-fill"></div></div>
             <div class="info-pelicula">
-                <span class="tag-ia"><i class="fa-solid fa-wand-magic-sparkles"></i> ${item.tipo === 'noticia' ? 'Noticia' : 'K-Drama IA'}</span>
+                <span class="tag-ia"><i class="fa-solid fa-wand-magic-sparkles"></i> ${item.tipo === 'noticia' ? 'Noticia' : 'Video IA'}</span>
                 <h2>${item.titulo}</h2>
                 <p>${item.descripcion || ''}</p>
             </div>
@@ -512,9 +512,9 @@
             } else {
                 const mensajes = {
                     'ya_vista': null,
-                    'limite_diario': '¡Límite diario de películas alcanzado!',
+                    'limite_diario': '¡Límite diario de Videos alcanzado!',
                     'usuario_invalido': 'Usuario no reconocido',
-                    'pelicula_invalida': 'Esta película ya no está disponible'
+                    'pelicula_invalida': 'Este video ya no está disponible'
                 };
                 const msg = mensajes[data.error];
                 if (msg) mostrarToast(msg, true);
