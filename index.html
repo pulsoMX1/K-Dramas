@@ -361,6 +361,20 @@
         }
     }
 
+    function refrescarAnunciosNativos() {
+        // Refrescar TODOS los anuncios nativos que ya fueron inyectados
+        document.querySelectorAll('.slide[data-anuncio-inyectado="true"]').forEach(slide => {
+            const adSlot = slide.querySelector('.ad-native-slot');
+            if (adSlot) {
+                adSlot.innerHTML = '';
+                adSlot.appendChild(crearIframeAd(
+                    `<html><body style='margin:0;display:flex;justify-content:center;align-items:center;'><div id='container-c242865b5697b34c2e6ac92e118e339e'></div><script async='async' data-cfasync='false' src='https://pl30307316.effectivecpmnetwork.com/c242865b5697b34c2e6ac92e118e339e/invoke.js'><\/script></body></html>`,
+                    'width:100%;height:250px;border:none;'
+                ));
+            }
+        });
+    }
+
     function construirFeedMezclado(peliculas) {
         const noticias = obtenerNoticiasVideoPlaceholder();
         const items = peliculas.map(p => ({ ...p, tipo: 'pelicula' }));
@@ -513,14 +527,15 @@
 
         if (slide.dataset.tipo === 'anuncio') {
             // Si el slide al que bajamos es una tarjeta de Facebook, inyectamos el anuncio de Adsterra
-            // exactamente en el momento en el que el usuario lo está viendo.
+            // SOLO LA PRIMERA VEZ (cuando no tiene el flag de inyectado)
             const adSlot = slide.querySelector('.ad-native-slot');
-            if (adSlot) {
+            if (adSlot && !slide.dataset.anuncioInyectado) {
                 adSlot.innerHTML = '';
                 adSlot.appendChild(crearIframeAd(
                     `<html><body style='margin:0;display:flex;justify-content:center;align-items:center;'><div id='container-c242865b5697b34c2e6ac92e118e339e'></div><script async='async' data-cfasync='false' src='https://pl30307316.effectivecpmnetwork.com/c242865b5697b34c2e6ac92e118e339e/invoke.js'><\/script></body></html>`,
                     'width:100%;height:250px;border:none;'
                 ));
+                slide.dataset.anuncioInyectado = 'true'; // marcar como inyectado
             }
             return; 
         }
@@ -622,6 +637,7 @@
             // Luego refrescarlos automáticamente cada 40 segundos (sin hacer refresh en cada swipe)
             setInterval(() => {
                 refrescarBannerYSocialBar();
+                refrescarAnunciosNativos(); // También refrescar los anuncios nativos
             }, 40000);
         } catch (e) {
             console.error('Error cargando feed:', e);
